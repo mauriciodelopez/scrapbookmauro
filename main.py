@@ -1,77 +1,191 @@
 import requests
+import csv
 from bs4 import BeautifulSoup
-html_page = requests.get('https://books.toscrape.com/')
+
+
+
+
+
+main_page = 'https://books.toscrape.com/'
+html_page = requests.get(main_page)
 soup = BeautifulSoup(html_page.content, 'html.parser')
 
-soup.prettify #get the web page nicer
 
-#Scrape de un seul livre, dans une première page de liste de livres
-soup.find_all('li', {'class':'col-xs-6 col-sm-4 col-md-3 col-lg-3'})
-first_20 = soup.find_all('li', {'class':'col-xs-6 col-sm-4 col-md-3 col-lg-3'})
-len(first_20)
-#choisir un livre dans la liste
-first = first_20[0]
-#trouver : url, price, image, stock, titre, rating
-first.find('a')['href'] #url
-first.find('h3').find('a')['title'] #title
-first.find('p',class_='price_color').text #prix
-first.find('p',class_='instock availability').text #stock
-first.find_all('p',{'class':'star-rating Three'}) # rating
-import re
-regex = re.compile("star-rating (.*)")
-first.find ('p', {'class': regex})
-first.find ('p', {'class': regex})['class'][-1] #nombre de star
-#print(first)
 
-#store each book information into a dictionary (with keys)mettre tout l'information dans un dictionnaire
-def clean_scrape(book): 
-    info = {} #dictionnaire
+#Depuis la page d'accueil Recuperer les liens de categories 
+   #Pour chqaue lien de cqtegorie recuperer la page de la categorie
+       #pour chaque page de la categorie recuperer les liens des livres
+           #pour chaque lien de livre appeler la fonction qui recupere les infos
+           
+
+# Ordre d'execution prmièrement   get_category_link , puis  get_bookURL_from_category , puis     get_book_info 
+def get_book_info(book_url):
+    dict_of_features = {}
+    try:
+      html_page = requests.get(book_url)
+      soup = BeautifulSoup(html_page.content, 'html.parser')
+
+
+      title_of_book = soup.find("div", {"class": "col-sm-6 product_main"}).find("h1")
+      title_of_book = title_of_book.get_text().replace("£", "")
+      title_of_book = title_of_book.replace("\n", "")
+
+      product_description = soup.find("article", {"class": "product_page"}).find("p", recursive=False).get_text()
+      image_object = soup.find("div", {"class":"item active"})
+      image_object_url = image_object.find("img")["src"]
+      image_object_url = image_object_url.replace("../../", f"{main_page}")
+
+      category_name = soup.find("ul", {"class":"breadcrumb"}).find_all("a")[2]
+      category_name = category_name.text
     
-    info['title'] = book.find('h3').find('a')['title'] #creation of new keys here title
-    info['price'] = book.find('p',class_='price_color').text #creation of new keys here price
+
+      dict_of_features["image_url"] = image_object_url
+      table_of_features = soup.find("table", {"class": "table table-striped"})
+      #print(table_of_features)
+
+      rows = table_of_features.find_all("tr")
     
-    if 'In stock' in first.find('p',class_='instock availability').text: #creation of new keys here in stock
-        info['in_stock'] = True #here i used true or false to erase spaces + letters annd '\n\n    \n        In stock\n    \n'
-    else:
-        info['in_stock'] = False
-        
-    info['stars'] = book.find ('p', {'class': regex})['class'][-1] #creation of new keys here stars
-    info['url'] = 'https://books.toscrape.com/'+ book.find('a')['href'] #creation of new keys here url
+      for row in rows:
+        cells = row.find_all("th")
+        value = cells[0].get_text()
+        dict_of_features[value] = row.find_all("td")[0].get_text().replace("£", "")
+
+      dict_of_features["product_page_url"] = book_url
+      dict_of_features["title"] = title_of_book
+      dict_of_features["product_description"] = product_description
+      dict_of_features["category_name"] = category_name
+      return dict_of_features
+    except Exception as e:
+      #print(e)
+      pass
+      
+          
+def get_category_link():
+    links_category = soup.find('div', {'class':'side_categories'})
+    links_category = links_category.find('ul', {'class':'nav nav-list'})
+    links_category = links_category.find('li')
+    links_category = links_category.find('ul')
+
+    list_from_links_of_category = []
+    for tag in links_category.contents:
+        try:
+          #url_category = main_page+ "/" + tag.nextSibling.find('a')['href']
+          url_category = f"{main_page}/{tag.nextSibling.find('a')['href']}"
+
+          list_from_links_of_category.append(url_category)
+        except Exception as error:
+          continue
+    # example of result ["url_1", "url_2"...]
+    return list_from_links_of_category
+
+def get_bookURL_from_category(category_url):
+  book_url=[]
+  #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
+  html_page = requests.get(category_url)
+  soup = BeautifulSoup(html_page.content, 'html.parser')
+  
+  limit_of_pages = soup.find("li", {"class": "current"})
+  array_links_subpages_category = []
+
+  if limit_of_pages is not None:
+    limit_of_pages = limit_of_pages.get_text()
+    limit_of_pages = limit_of_pages.replace("\n" , "")
+    limit_of_pages = limit_of_pages.strip()
+    limit_of_pages = limit_of_pages.split(" ")
+    limit_of_pages = int(limit_of_pages[-1])
+    # example of limits "Page 1 of 2"
+    # ["page", "1", "of", "2"]
+    for link in range(1,limit_of_pages+1):
+      subpage_url = category_url.replace("index.html", "")
+      subpage_url = subpage_url + f"page-{link}.html"
+      array_links_subpages_category.append(subpage_url)
+
+
+  if len(array_links_subpages_category) > 0:
+    for url_subcategory in array_links_subpages_category:
+      content_of_subpage = requests.get(url_subcategory)
+      soup = BeautifulSoup(content_of_subpage.content, 'html.parser')
+      container_of_books = soup.find("ol", {"class": "row"})
+
+      for book in container_of_books.contents:
+        try:
+          url_book = book.nextSibling.find("h3").find("a")["href"]
+          url_book = url_book.replace("../../../", 'https://books.toscrape.com/catalogue/')
+          book_url.append(url_book)
+        except Exception as _:
+          continue
+  else:
+      soup = BeautifulSoup(html_page.content, 'html.parser')
+      container_of_books = soup.find("ol", {"class": "row"})
+      for book in container_of_books.contents:
+        try:
+          url_book = book.nextSibling.find("h3").find("a")["href"]
+          url_book = url_book.replace("../../../", 'https://books.toscrape.com/catalogue/')
+          book_url.append(url_book)
+        except Exception as _:
+          continue
+  # naviguer dans toutes les pages de cette catégorie afin de recuperer les liens de livres
+  return book_url
+
+def generate_csv_books(array_of_books):
+  file_results = open('resultados_finales.csv', 'w')
+  writer = csv.writer(file_results)
+  writer.writerow(list( array_of_books[0].keys()))
+  for dictionary in array_of_books:
+      writer.writerow(dictionary.values())
+  file_results.close()
+
+results_final = []
+categories = get_category_link()
+for category in categories:
+  books = get_bookURL_from_category(category)
+  for book in books:
+    book_info = get_book_info(book)
+    results_final.append(book_info)
+
+generate_csv_books(results_final)
+
+
+
+
+
+
+
+
+""""
+list_from_links_of_books = []
+
+dict_of_categories = {
+}
+url_of_categories = get_category_link()
+
+for url in url_of_categories:
+  dict_of_categories[url] = []
+
+for category_url in url_of_categories:
+  url_of_book = get_bookURL_from_category(category_url, dict_of_categories)
+  list_from_links_of_books.append(url_of_book)
+
+
+new_dict_final_data = {}
+for key, value in dict_of_categories.items():
+  new_dict_final_data[key] = {}
+  for book_url in value:
+    dict_features = get_book_info(book_url)
+    new_dict_final_data[key][book_url] = dict_features
+
+
+print(new_dict_final_data)
+
+"""
     
-    return info
-#print(clean_scrape(first)) #test get a dictionary clean_scrape
 
-books_dicts = [clean_scrape(book) for book in first_20]
-#print(books_dicts)
+#find_next_siblings() function is used to find all the next siblings of a tag / element.
+#It returns all the next siblings that match.
 
-#Scraping multiples pages (pagination)
-url = 'https://books.toscrape.com/catalogue/page-1.html'
-urls = ['https://books.toscrape.com/catalogue/page-{}.html'.format(i) for i in range (1, 51)]
-urls #get the list of urls
+#En Python, una cadena de texto normalmente se escribe entre comillas dobles ("") o comillas simples (''). Para crear f-strings, solo tienes que agregar la letra f o F mayúscula antes de las comillas.
 
-#cette fonction prends 20 livres pour chacun des URL et parse a travers la liste des urls pour obtenir toute l'information des livres du site
-def get_20_books (url): 
-    
-    html_page = requests.get(url)
-    soup = BeautifulSoup(html_page.content, 'html.parser')
-    
-    raw = soup.find_all('li',{'class': 'col-xs-6 col-sm-4 col-md-3 col-lg-3'})
-    to_dicts = [clean_scrape(book) for book in raw]
-    return to_dicts
-
-#test avec une page 43
-get_20_books('https://books.toscrape.com/catalogue/page-43.html')
-
-#creation d'une list et mettre toute l'info des dictionnaires, avec .extend 
-
-all_dicts = []
-
-for url in urls:
-    all_dicts.extend(get_20_books(url))
-    
-print(len(all_dicts)) 
-all_dicts
-
+#Por ejemplo, "esto" es una cadena de texto normal y f"esto" es una f-string.
 
 
 

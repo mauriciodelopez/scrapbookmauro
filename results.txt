@@ -1,0 +1,4 @@
+/Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/entorno_scraping/bin/python /Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/main.py>results.txt
+/Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/entorno_scraping/bin/python /Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/main.py
+/Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/entorno_scraping/bin/python /Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/main.py
+/Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/entorno_scraping/bin/python /Users/mauriciolopez/Desktop/scrapbooks/scrapbookmauro/main.py
