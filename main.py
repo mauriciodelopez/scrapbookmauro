@@ -19,6 +19,7 @@ soup = BeautifulSoup(html_page.content, 'html.parser')
            
 
 # Ordre d'execution prmièrement   get_category_link , puis  get_bookURL_from_category , puis     get_book_info 
+#Troisieme partie récuperer les informations du livre 
 def get_book_info(book_url):
     dict_of_features = {}
     try:
@@ -59,7 +60,7 @@ def get_book_info(book_url):
       #print(e)
       pass
       
-          
+ #First         
 def get_category_link():
     links_category = soup.find('div', {'class':'side_categories'})
     links_category = links_category.find('ul', {'class':'nav nav-list'})
@@ -77,7 +78,7 @@ def get_category_link():
           continue
     # example of result ["url_1", "url_2"...]
     return list_from_links_of_category
-
+#Second
 def get_bookURL_from_category(category_url):
   book_url=[]
   #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
@@ -126,7 +127,7 @@ def get_bookURL_from_category(category_url):
           continue
   # naviguer dans toutes les pages de cette catégorie afin de recuperer les liens de livres
   return book_url
-
+#quatrieme
 def generate_csv_books(array_of_books):
   file_results = open('resultados_finales.csv', 'w')
   writer = csv.writer(file_results)
@@ -144,8 +145,7 @@ for category in categories:
     results_final.append(book_info)
 
 generate_csv_books(results_final)
-
-
+print("PROCESO TERMINADO")
 
 
 
