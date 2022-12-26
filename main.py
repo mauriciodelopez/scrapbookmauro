@@ -2,6 +2,8 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 
+import os 
+import shutil
 
 
 
@@ -78,41 +80,42 @@ def get_category_link():
           continue
     # example of result ["url_1", "url_2"...]
     return list_from_links_of_category
-#Second
+#Second, pouvoir naviguer à l'interieur des pages d'une catégorie(plsieurs pages dans ne catégorie), 
+#pouvoir recuperer les infos des livres (get_book_info)
 def get_bookURL_from_category(category_url):
   book_url=[]
   #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
   html_page = requests.get(category_url)
   soup = BeautifulSoup(html_page.content, 'html.parser')
   
-  limit_of_pages = soup.find("li", {"class": "current"})
-  array_links_subpages_category = []
+  limit_of_pages = soup.find("li", {"class": "current"}) #chercher la limite of pages class current
+  array_links_subpages_category = [] #array qui prepare les url dans le cas ou il faut scraper plusieurs pages, vient de var subpage url
 
-  if limit_of_pages is not None:
-    limit_of_pages = limit_of_pages.get_text()
-    limit_of_pages = limit_of_pages.replace("\n" , "")
-    limit_of_pages = limit_of_pages.strip()
-    limit_of_pages = limit_of_pages.split(" ")
-    limit_of_pages = int(limit_of_pages[-1])
+  if limit_of_pages is not None: #cycle qui permet de trouver les page qui ne sont pas none 
+    limit_of_pages = limit_of_pages.get_text()#besoin d'extraire le texte page 1 of 2, avec atribute get_text
+    limit_of_pages = limit_of_pages.replace("\n" , "") #replace du saut de ligne pour rien 
+    limit_of_pages = limit_of_pages.strip()#enlever les spaces grace a la fonction .strip
+    limit_of_pages = limit_of_pages.split(" ")#split nous luis indicons que nous voulons separer les elements par un space
+    limit_of_pages = int(limit_of_pages[-1])#la limite des pages est la position -1, dans un array -1 est le dernier element, int convertion en entier
     # example of limits "Page 1 of 2"
-    # ["page", "1", "of", "2"]
-    for link in range(1,limit_of_pages+1):
-      subpage_url = category_url.replace("index.html", "")
+    # ["page", "1", "of", "2"] creation de un array le dernière element "2", car il est separé par spaces 
+    for link in range(1,limit_of_pages+1): # compte iteration 1 +1
+      subpage_url = category_url.replace("index.html", "")#var subpage_url egal à category_url que nous avons deja
       subpage_url = subpage_url + f"page-{link}.html"
       array_links_subpages_category.append(subpage_url)
 
 
-  if len(array_links_subpages_category) > 0:
-    for url_subcategory in array_links_subpages_category:
-      content_of_subpage = requests.get(url_subcategory)
-      soup = BeautifulSoup(content_of_subpage.content, 'html.parser')
-      container_of_books = soup.find("ol", {"class": "row"})
+  if len(array_links_subpages_category) > 0: #si longueur de  l'array >0, cela contient autre page 
+    for url_subcategory in array_links_subpages_category:#ycle for sur un array qui vas contenir les infos container des subpages
+      content_of_subpage = requests.get(url_subcategory)#obtient code of subpage
+      soup = BeautifulSoup(content_of_subpage.content, 'html.parser')# fait le parser #
+      container_of_books = soup.find("ol", {"class": "row"})#ici atravers la classe row qui contient le container de books 
 
-      for book in container_of_books.contents:
+      for book in container_of_books.contents: #du premier livre
         try:
           url_book = book.nextSibling.find("h3").find("a")["href"]
           url_book = url_book.replace("../../../", 'https://books.toscrape.com/catalogue/')
-          book_url.append(url_book)
+          book_url.append(url_book)#ajoute les url a l'array book url, et les ajoute.....
         except Exception as _:
           continue
   else:
@@ -128,8 +131,11 @@ def get_bookURL_from_category(category_url):
   # naviguer dans toutes les pages de cette catégorie afin de recuperer les liens de livres
   return book_url
 #quatrieme
-def generate_csv_books(array_of_books):
-  file_results = open('resultados_finales.csv', 'w')
+def generate_csv_books(array_of_books, file_name=None):
+  if file_name is None:
+    file_name  ='resultados_finales.csv'
+
+  file_results = open(file_name, 'w')
   writer = csv.writer(file_results)
   writer.writerow(list( array_of_books[0].keys()))
   for dictionary in array_of_books:
@@ -138,81 +144,60 @@ def generate_csv_books(array_of_books):
 
 results_final = []
 categories = get_category_link()
+contador = 0
 for category in categories:
+  #if "mystery" in category:
   books = get_bookURL_from_category(category)
   for book in books:
     book_info = get_book_info(book)
     results_final.append(book_info)
 
+
 generate_csv_books(results_final)
 print("PROCESO TERMINADO")
+print("RESULTADOS FINALES")
+print(results_final)
+
+
+def getpages_by_category(array_of_books):
+  dict_images = {}
+  books_information_file = {}
+  if os.path.isdir("./scrapy_information"):
+    shutil.rmtree('./scrapy_information/')
+  
+  distinct_categorys = []
+  for book in array_of_books:
+    category_name = book["category_name"]
+    distinct_categorys.append(category_name)
+    if not os.path.isdir(f"./scrapy_information/{category_name}"):
+      os.makedirs(f"./scrapy_information/{category_name}")
+      dict_images[category_name] = [{
+        "image_url": book["image_url"],
+        "book_name": book["title"],
+         "category_name": category_name
+      }]
+      book.pop("image_url")
+      books_information_file[category_name] = [book]
+    elif os.path.isdir(f"./scrapy_information/{category_name}"):
+      dict_images[category_name].append({
+        "image_url": book["image_url"],
+        "book_name": book["title"],
+        "category_name": category_name
+      })
+      book.pop("image_url")
+      name_file = f"./scrapy_information/{category_name}/{category_name}_{book['UPC']}.csv"
+      books_information_file[category_name].append(book)
+      #generate_csv_books(, name_file)
+  
+  for key , value in dict_images.items():
+    file_name = f"./scrapy_information/{key}/images_category_books.csv"
+    file_name_books = f"./scrapy_information/{key}/books_category.csv"
+    generate_csv_books(value, file_name)
+    generate_csv_books(books_information_file[key], file_name_books)
+
+  
 
 
 
 
-
-
-""""
-list_from_links_of_books = []
-
-dict_of_categories = {
-}
-url_of_categories = get_category_link()
-
-for url in url_of_categories:
-  dict_of_categories[url] = []
-
-for category_url in url_of_categories:
-  url_of_book = get_bookURL_from_category(category_url, dict_of_categories)
-  list_from_links_of_books.append(url_of_book)
-
-
-new_dict_final_data = {}
-for key, value in dict_of_categories.items():
-  new_dict_final_data[key] = {}
-  for book_url in value:
-    dict_features = get_book_info(book_url)
-    new_dict_final_data[key][book_url] = dict_features
-
-
-print(new_dict_final_data)
-
-"""
-    
-
-#find_next_siblings() function is used to find all the next siblings of a tag / element.
-#It returns all the next siblings that match.
-
-#En Python, una cadena de texto normalmente se escribe entre comillas dobles ("") o comillas simples (''). Para crear f-strings, solo tienes que agregar la letra f o F mayúscula antes de las comillas.
-
-#Por ejemplo, "esto" es una cadena de texto normal y f"esto" es una f-string.
-
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+getpages_by_category(results_final)
