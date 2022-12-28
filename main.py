@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import os 
 import shutil
 
+import json
 
 
 
@@ -132,72 +133,81 @@ def get_bookURL_from_category(category_url):
   return book_url
 #quatrieme
 def generate_csv_books(array_of_books, file_name=None):
-  if file_name is None:
-    file_name  ='resultados_finales.csv'
+  try:
+    file_results = open(file_name, 'w')
+    writer = csv.writer(file_results)
+    writer.writerow(list( array_of_books[0].keys()))
+    for dictionary in array_of_books:
+        writer.writerow(dictionary.values())
+    file_results.close()
+  except Exception as e:
+    print("Error en la funcion generate_csv_books")
+    print(array_of_books)
+    print(file_name)
+    print("Error en la funcion generate_csv_books")
+    print(e)
 
-  file_results = open(file_name, 'w')
-  writer = csv.writer(file_results)
-  writer.writerow(list( array_of_books[0].keys()))
-  for dictionary in array_of_books:
-      writer.writerow(dictionary.values())
-  file_results.close()
-
-results_final = []
-categories = get_category_link()
-contador = 0
-for category in categories:
-  #if "mystery" in category:
-  books = get_bookURL_from_category(category)
-  for book in books:
-    book_info = get_book_info(book)
-    results_final.append(book_info)
-
-
-generate_csv_books(results_final)
-print("PROCESO TERMINADO")
-print("RESULTADOS FINALES")
-print(results_final)
 
 
 def getpages_by_category(array_of_books):
-  dict_images = {}
-  books_information_file = {}
-  if os.path.isdir("./scrapy_information"):
-    shutil.rmtree('./scrapy_information/')
-  
-  distinct_categorys = []
-  for book in array_of_books:
-    category_name = book["category_name"]
-    distinct_categorys.append(category_name)
-    if not os.path.isdir(f"./scrapy_information/{category_name}"):
-      os.makedirs(f"./scrapy_information/{category_name}")
-      dict_images[category_name] = [{
-        "image_url": book["image_url"],
-        "book_name": book["title"],
-         "category_name": category_name
-      }]
-      book.pop("image_url")
-      books_information_file[category_name] = [book]
-    elif os.path.isdir(f"./scrapy_information/{category_name}"):
-      dict_images[category_name].append({
-        "image_url": book["image_url"],
-        "book_name": book["title"],
-        "category_name": category_name
-      })
-      book.pop("image_url")
-      name_file = f"./scrapy_information/{category_name}/{category_name}_{book['UPC']}.csv"
-      books_information_file[category_name].append(book)
-      #generate_csv_books(, name_file)
-  
-  for key , value in dict_images.items():
-    file_name = f"./scrapy_information/{key}/images_category_books.csv"
-    file_name_books = f"./scrapy_information/{key}/books_category.csv"
-    generate_csv_books(value, file_name)
-    generate_csv_books(books_information_file[key], file_name_books)
+  try:
+    dict_images = {}
+    books_information_file = {}
+    if os.path.isdir("./scrapy_information"):
+      shutil.rmtree('./scrapy_information/')
+    
+    distinct_categorys = []
+    for book in array_of_books:
+      if book is None:
+        continue
+      category_name = book["category_name"]
+      distinct_categorys.append(category_name)
+      if not os.path.isdir(f"./scrapy_information/{category_name}"):
+        os.makedirs(f"./scrapy_information/{category_name}")
+        dict_images[category_name] = [{
+          "image_url": book["image_url"],
+          "book_name": book["title"],
+          "category_name": category_name
+        }]
+        book.pop("image_url")
+        books_information_file[category_name] = [book]
+      elif os.path.isdir(f"./scrapy_information/{category_name}"):
+        dict_images[category_name].append({
+          "image_url": book["image_url"],
+          "book_name": book["title"],
+          "category_name": category_name
+        })
+        book.pop("image_url")
+        books_information_file[category_name].append(book)
+      
+    
+    for key , value in dict_images.items():
+      file_name = f"./scrapy_information/{key}/images_category_books.csv"
+      file_name_books = f"./scrapy_information/{key}/books_category.csv"
+      generate_csv_books(value, file_name)
+      generate_csv_books(books_information_file[key], file_name_books)
+  except Exception as e:
+    print("ERROR EN LA FUNCION getpages_by_category ")
+    print(e)
+    print(book)
+    print("ERROR EN LA FUNCION getpages_by_category ")
 
-  
 
 
 
+# comienzo de la ejecucion
+results_final = []
+categories = get_category_link()  # array de links de las categorias []
 
+for category in categories:
+  #if "mystery" in category:
+  books = get_bookURL_from_category(category) # retorna un array con todos los URLS de los libros de esa categoria (todos incluyendo subpaginas)
+  for book in books:
+    book_info = get_book_info(book) # retorna un diccionario con las caracteristicas de los libros
+    results_final.append(book_info)
+
+
+print("PROCESO TERMINADO")
+print("RESULTADOS FINALES")
+#finalizacion de la ejecucion
 getpages_by_category(results_final)
