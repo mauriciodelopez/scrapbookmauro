@@ -63,7 +63,7 @@ def get_book_info(book_url):
       #print(e)
       pass
       
- #First         
+ #First , j'obtients les links pour les garder dans la variable categories        
 def get_category_link():
     links_category = soup.find('div', {'class':'side_categories'})
     links_category = links_category.find('ul', {'class':'nav nav-list'})
@@ -83,7 +83,7 @@ def get_category_link():
     return list_from_links_of_category
 #Second, pouvoir naviguer à l'interieur des pages d'une catégorie(plsieurs pages dans ne catégorie), 
 #pouvoir recuperer les infos des livres (get_book_info)
-def get_bookURL_from_category(category_url):
+def get_bookURL_from_category(category_url): # simplifier cette partie 
   book_url=[]
   #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
   html_page = requests.get(category_url)
@@ -103,7 +103,7 @@ def get_bookURL_from_category(category_url):
     for link in range(1,limit_of_pages+1): # compte iteration 1 +1
       subpage_url = category_url.replace("index.html", "")#var subpage_url egal à category_url que nous avons deja
       subpage_url = subpage_url + f"page-{link}.html"
-      array_links_subpages_category.append(subpage_url)
+    array_links_subpages_category.append(subpage_url)
 
 
   if len(array_links_subpages_category) > 0: #si longueur de  l'array >0, cela contient autre page 
@@ -154,23 +154,23 @@ def getpages_by_category(array_of_books):
     dict_images = {}
     books_information_file = {}
     if os.path.isdir("./scrapy_information"):
-      shutil.rmtree('./scrapy_information/')
+      shutil.rmtree('./scrapy_information/') #efface tous les infos precedents, pouvoir laisser le fichier vide
     
-    distinct_categorys = []
+    distinct_categorys = [] #creation d'un array et faire cycle sur books
     for book in array_of_books:
       if book is None:
         continue
-      category_name = book["category_name"]
-      distinct_categorys.append(category_name)
-      if not os.path.isdir(f"./scrapy_information/{category_name}"):
-        os.makedirs(f"./scrapy_information/{category_name}")
-        dict_images[category_name] = [{
+      category_name = book["category_name"] #on obtien le nom de la categorie
+      distinct_categorys.append(category_name) #.append to categories
+      if not os.path.isdir(f"./scrapy_information/{category_name}"): 
+        os.makedirs(f"./scrapy_information/{category_name}") # si non existe creation du fichier avec le nom de la categorie
+        dict_images[category_name] = [{  #iteration sur dict images pour recuperer les images au meme temps
           "image_url": book["image_url"],
           "book_name": book["title"],
           "category_name": category_name
         }]
-        book.pop("image_url")
-        books_information_file[category_name] = [book]
+        book.pop("image_url")#avec pop effeace image et ne peut pas contenir images car il et crée dans un fichier a part
+        books_information_file[category_name] = [book] #cretion d'une categorie et lui assigne le nom du livre "travel":[livre1]
       elif os.path.isdir(f"./scrapy_information/{category_name}"):
         dict_images[category_name].append({
           "image_url": book["image_url"],
@@ -195,19 +195,19 @@ def getpages_by_category(array_of_books):
 
 
 
-# comienzo de la ejecucion
-results_final = []
-categories = get_category_link()  # array de links de las categorias []
+# debut de l'execution, commence par declarer une liste vide puis, j'obtien toutes les categories 
+results_final = [] 
+categories = get_category_link()  # array de links de les categories []
 
-for category in categories:
+for category in categories: #parcour tous les url var categories  
   #if "mystery" in category:
-  books = get_bookURL_from_category(category) # retorna un array con todos los URLS de los libros de esa categoria (todos incluyendo subpaginas)
+  books = get_bookURL_from_category(category) # retourne un array avec tous les URLS des livres de cette categorie (tous inclus les subpages)
   for book in books:
-    book_info = get_book_info(book) # retorna un diccionario con las caracteristicas de los libros
+    book_info = get_book_info(book) # retourne un dictionnaire avec les caracteristiques des livres
     results_final.append(book_info)
 
 
 print("PROCESO TERMINADO")
 print("RESULTADOS FINALES")
-#finalizacion de la ejecucion
+#final de l'execution
 getpages_by_category(results_final)
