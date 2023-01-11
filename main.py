@@ -132,6 +132,22 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
   # naviguer dans toutes les pages de cette catégorie afin de recuperer les liens de livres
   return book_url
 #quatrieme
+
+def nbre_pages_categorie (soup): 
+
+#Fonction pour determiner le nb des pages pour une catégorie  
+  page = (soup.find("li", {"class": "current"}))
+  
+  if page is None:
+      nb_page = 1
+      
+  else:
+      page = str(page)
+      page = page.split()[5]
+      nb_page = int (page)
+  
+  return nb_page
+  
 def generate_csv_books(array_of_books, file_name=None):
   try:
     file_results = open(file_name, 'w')
