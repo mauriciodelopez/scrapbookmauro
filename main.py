@@ -89,8 +89,6 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
   html_page = requests.get(category_url)
   soup = BeautifulSoup(html_page.content, 'html.parser')
   
-  
-  
   limit_of_pages = soup.find("li", {"class": "current"}) #chercher la limite of pages class current
   array_links_subpages_category = [] #array qui prepare les url dans le cas ou il faut scraper plusieurs pages, vient de var subpage url
 
@@ -135,7 +133,7 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
   return book_url
 #quatrieme
 
-def nbre_pages_categorie (soup): 
+##def nbre_pages_categorie (soup): 
 
 #Fonction pour determiner le nb des pages pour une catégorie  
   page = (soup.find("li", {"class": "current"}))
