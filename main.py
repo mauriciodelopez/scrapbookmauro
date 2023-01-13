@@ -1,12 +1,10 @@
 import requests
 import csv
 from bs4 import BeautifulSoup
-
+import os
+import urllib.request
 import os 
 import shutil
-
-import json
-
 
 
 main_page = 'https://books.toscrape.com/'
@@ -89,17 +87,13 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
   html_page = requests.get(category_url)
   soup = BeautifulSoup(html_page.content, 'html.parser')
   
-  limit_of_pages = soup.find("li", {"class": "current"}) #chercher la limite of pages class current
+  
+  limit_of_pages = nbre_pages_categorie(soup)
+  
   array_links_subpages_category = [] #array qui prepare les url dans le cas ou il faut scraper plusieurs pages, vient de var subpage url
 
-  if limit_of_pages is not None: #cycle qui permet de trouver les page qui ne sont pas none 
-    limit_of_pages = limit_of_pages.get_text()#besoin d'extraire le texte page 1 of 2, avec atribute get_text
-    limit_of_pages = limit_of_pages.replace("\n" , "") #replace du saut de ligne pour rien 
-    limit_of_pages = limit_of_pages.strip()#enlever les spaces grace a la fonction .strip
-    limit_of_pages = limit_of_pages.split(" ")#split nous luis indicons que nous voulons separer les elements par un space
-    limit_of_pages = int(limit_of_pages[-1])#la limite des pages est la position -1, dans un array -1 est le dernier element, int convertion en entier
-    # example of limits "Page 1 of 2"
-    # ["page", "1", "of", "2"] creation de un array le dernière element "2", car il est separé par spaces 
+
+  if limit_of_pages is not None and limit_of_pages > 1: #cycle qui permet de trouver les page qui ne sont pas none 
     for link in range(1,limit_of_pages+1): # compte iteration 1 +1
       subpage_url = category_url.replace("index.html", "")#var subpage_url egal à category_url que nous avons deja
       subpage_url = subpage_url + f"page-{link}.html"
@@ -133,20 +127,18 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
   return book_url
 #quatrieme
 
-##def nbre_pages_categorie (soup): 
+def nbre_pages_categorie (soup): 
+  #Fonction pour determiner le nb des pages pour une catégorie  
+  limit_of_pages = (soup.find("li", {"class": "current"}))
 
-#Fonction pour determiner le nb des pages pour une catégorie  
-  page = (soup.find("li", {"class": "current"}))
-  
-  if page is None:
+  if limit_of_pages is None:
       nb_page = 1
-      
-  else:
-      page = str(page)
-      page = page.split()[5]
-      nb_page = int (page)
-  
-  return nb_page
+      return nb_page
+  else:  
+    nb_page = int(limit_of_pages.get_text().replace("\n" , "").strip().split(" ")[-1])
+    return nb_page
+ 
+ 
   
 def generate_csv_books(array_of_books, file_name=None):
   try:
@@ -164,6 +156,13 @@ def generate_csv_books(array_of_books, file_name=None):
     print(e)
 
 
+
+def download_image(url, directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = url.split("/")[-1]
+    filepath = os.path.join(directory, filename)
+    urllib.request.urlretrieve(url, filepath)
 
 def getpages_by_category(array_of_books):
   try:
@@ -196,19 +195,21 @@ def getpages_by_category(array_of_books):
         book.pop("image_url")
         books_information_file[category_name].append(book)
       
-    
+  
     for key , value in dict_images.items():
       file_name = f"./scrapy_information/{key}/images_category_books.csv"
       file_name_books = f"./scrapy_information/{key}/books_category.csv"
       generate_csv_books(value, file_name)
       generate_csv_books(books_information_file[key], file_name_books)
+      
+      for image_category in value:
+        image_url = image_category["image_url"]
+        directory = f"scrapy_information/{key}/images_of_category"
+        download_image(image_url, directory)
   except Exception as e:
     print("ERROR EN LA FUNCION getpages_by_category ")
     print(e)
-    print(book)
     print("ERROR EN LA FUNCION getpages_by_category ")
-
-
 
 
 # debut de l'execution, commence par declarer une liste vide puis, j'obtien toutes les categories 
@@ -216,7 +217,6 @@ results_final = []
 categories = get_category_link()  # array de links de les categories []
 
 for category in categories: #parcour tous les url var categories  
-  #if "mystery" in category:
   books = get_bookURL_from_category(category) # retourne un array avec tous les URLS des livres de cette categorie (tous inclus les subpages)
   for book in books:
     book_info = get_book_info(book) # retourne un dictionnaire avec les caracteristiques des livres
