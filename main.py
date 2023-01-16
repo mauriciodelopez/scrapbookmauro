@@ -81,18 +81,18 @@ def get_category_link():
     return list_from_links_of_category
 #Second, pouvoir naviguer à l'interieur des pages d'une catégorie(plsieurs pages dans ne catégorie), 
 #pouvoir recuperer les infos des livres (get_book_info)
-def get_bookURL_from_category(category_url): # simplifier cette partie 
+def get_bookURL_from_category(category_url): #  partie simplifié 
   book_url=[]
   #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
   html_page = requests.get(category_url)
   soup = BeautifulSoup(html_page.content, 'html.parser')
   
   
-  limit_of_pages = nbre_pages_categorie(soup)
+  limit_of_pages = nbre_pages_categorie(soup) #la limite des pages va etre définie par cette fonction qui recoit tout la soup et rétourne la valeur 
   
   array_links_subpages_category = [] #array qui prepare les url dans le cas ou il faut scraper plusieurs pages, vient de var subpage url
 
-
+#si n'a  plus d'une page prend le flux d'une seule page dans la catégorie
   if limit_of_pages is not None and limit_of_pages > 1: #cycle qui permet de trouver les page qui ne sont pas none 
     for link in range(1,limit_of_pages+1): # compte iteration 1 +1
       subpage_url = category_url.replace("index.html", "")#var subpage_url egal à category_url que nous avons deja
@@ -114,7 +114,7 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
         except Exception as _:
           continue
   else:
-      soup = BeautifulSoup(html_page.content, 'html.parser')
+      soup = BeautifulSoup(html_page.content, 'html.parser') # si une seule page 
       container_of_books = soup.find("ol", {"class": "row"})
       for book in container_of_books.contents:
         try:
@@ -130,7 +130,7 @@ def get_bookURL_from_category(category_url): # simplifier cette partie
 def nbre_pages_categorie (soup): 
   #Fonction pour determiner le nb des pages pour une catégorie  
   limit_of_pages = (soup.find("li", {"class": "current"}))
-
+  #consulte la limite des pages de cette catégorie
   if limit_of_pages is None:
       nb_page = 1
       return nb_page
@@ -157,7 +157,7 @@ def generate_csv_books(array_of_books, file_name=None):
 
 
 
-def download_image(url, directory):
+def download_image(url, directory): #recoit l'url désiré et le directory où on souhaite garder l'image, cette fonction s'execute lors de la création des dossiers books category & images category
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = url.split("/")[-1]
@@ -201,8 +201,9 @@ def getpages_by_category(array_of_books):
       file_name_books = f"./scrapy_information/{key}/books_category.csv"
       generate_csv_books(value, file_name)
       generate_csv_books(books_information_file[key], file_name_books)
-      
-      for image_category in value:
+      #une fois crée ces deux dossiers, au final nous pouvons créer le directory images of category, et faire
+      #un cycle sur tous les images de la category, et pouvoir appeler la fonction dowload image, qui recoit l'url de l'image 
+      for image_category in value:  
         image_url = image_category["image_url"]
         directory = f"scrapy_information/{key}/images_of_category"
         download_image(image_url, directory)
@@ -211,7 +212,8 @@ def getpages_by_category(array_of_books):
     print(e)
     print("ERROR EN LA FUNCION getpages_by_category ")
 
-
+# Ordre d'execution prmièrement   get_category_link , puis  get_bookURL_from_category , puis     get_book_info 
+#Troisieme partie récuperer les informations du livre 
 # debut de l'execution, commence par declarer une liste vide puis, j'obtien toutes les categories 
 results_final = [] 
 categories = get_category_link()  # array de links de les categories []
