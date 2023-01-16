@@ -114,7 +114,7 @@ def get_bookURL_from_category(category_url): #  partie simplifié
         except Exception as _:
           continue
   else:
-      soup = BeautifulSoup(html_page.content, 'html.parser') # si une seule page 
+      soup = BeautifulSoup(html_page.content, 'html.parser') #  
       container_of_books = soup.find("ol", {"class": "row"})
       for book in container_of_books.contents:
         try:
