@@ -1,1 +1,0 @@
-##Append in Python is a pre-defined method used to add a single item to certain collection types.

@@ -1,3 +1,38 @@
+import shutil
+import os
+from page_functions import get_all_categories_link, get_all_books_url_from_category, get_book_info, getpages_by_category
+
+if __name__ == '__main__':
+    if os.path.isdir("./scrapy_information"):
+        shutil.rmtree('./scrapy_information/', ignore_errors=True)
+    
+    categories = get_all_categories_link()
+    results_final = [] 
+    
+    
+    # debut de l'execution, commence par declarer une liste vide puis, j'obtien toutes les categories 
+    for category in categories: #parcour tous les url var categories  
+        #if "mystery" in category:
+        books = get_all_books_url_from_category(category) # retourne un array avec tous les URLS des livres de cette categorie (tous inclus les subpages)
+        for book in books:
+            book_info = get_book_info(book) # retourne un dictionnaire avec les caracteristiques des livres
+            results_final.append(book_info)
+            
+    print("PROCESO TERMINADO")
+    print("RESULTADOS FINALES")
+    #final de l'execution
+    getpages_by_category(results_final)
+
+
+
+
+
+
+
+
+
+'''
+
 import requests
 import csv
 from bs4 import BeautifulSoup
@@ -229,3 +264,4 @@ print("PROCESO TERMINADO")
 print("RESULTADOS FINALES")
 #final de l'execution
 getpages_by_category(results_final)
+'''
