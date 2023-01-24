@@ -1,7 +1,7 @@
   
 import csv
 
-def generate_csv_books(array_of_books, file_name=None):
+def generate_csv_books(array_of_books, file_name):
   try:
     file_results = open(file_name, 'w')
     writer = csv.writer(file_results)
