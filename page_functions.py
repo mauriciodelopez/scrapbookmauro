@@ -108,7 +108,7 @@ def getpages_by_category(array_of_books):
           "category_name": category_name
         }]
         book.pop("image_url")#avec pop effeace image et ne peut pas contenir images car il et crée dans un fichier a part
-        books_information_file[category_name] = [book] #cretion d'une categorie et lui assigne le nom du livre "travel":[livre1]
+        books_information_file[category_name] = [book] #cretion d'une categorie et lui assigne le nom du livre exemple"travel":[livre1],  
       elif os.path.isdir(f"./scrapy_information/{category_name}"):
         dict_images[category_name].append({
           "image_url": book["image_url"],
