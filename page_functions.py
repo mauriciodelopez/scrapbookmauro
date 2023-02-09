@@ -41,7 +41,7 @@ def nbre_pages_categorie (soup):
  
 
 
-def get_all_books_url_from_category(category_url): # simplifier cette partie 
+def get_all_books_url_from_category(category_url): 
   book_url=[]
   #ici nous appelons l'url de la categorie, c'est à dire nous allons à la page de la categorie
   html_page = requests.get(category_url)
@@ -128,9 +128,9 @@ def getpages_by_category(array_of_books):
         directory = f"scrapy_information/{key}/images_of_category"
         download_image(image_url, directory)
   except Exception as e:
-    print("ERROR EN LA FUNCION getpages_by_category ")
+    print("ERREUR DANS la fontion getpages_by_category ")
     print(e)
-    print("ERROR EN LA FUNCION getpages_by_category ")
+    print("ERREUR DANS LA FONCTION getpages_by_category ")
     
     
 
